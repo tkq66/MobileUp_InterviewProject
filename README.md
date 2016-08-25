@@ -2,10 +2,12 @@
 
 Required:
 
-  Gradle  - to build the project
+  Gradle  	- to build the project
   
-  MySQL   - a database in localhost with the credentials specified in application.properties, located in src/main/resources
-          - a table inside the database, created with the query inside the file CreateTables.sql.
+  MySQL   	- a database in localhost with the credentials specified in application.properties, located in src/main/resources
+          	- a table inside the database, created with the query inside the file CreateTables.sql.
+  
+  CSV file 	- an initial CSV file containing the initial information. Right now, default CSV file is located inside src/main/resources 
 
 Running:
 
