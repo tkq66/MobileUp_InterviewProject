@@ -1,0 +1,313 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>Details List</title>
+	</head>
+	<body>
+		<h1>Details</h1>
+		<button type="buton" id="editBtn">Edit</button>
+		<button type="buton" id="deleteBtn">Delete</button>
+		<table border="1">
+			<thead>
+				<tr>
+					<th>Select</th>
+					<th>Date</th>
+					<th>Listing Id</th>
+					<th>Address</th>
+					<th>Description</th>
+					<th>Price</th>
+				</tr>
+			</thead>
+			<tbody>
+			</tbody>
+		</table>
+		
+		<script th:inline="javascript">
+		/*<![CDATA[*/
+		           
+		    var editMode = false;
+		    var listings = [[${processedListings}]];       
+		 	
+			// Convert list of string of json object to list of json object before populating the table
+			var initialListing = [];
+			for(i = 0; i < listings.length; i++)
+			{
+				var jsonElement = stringToJSON(listings[i]);
+				initialListing.push(jsonElement);
+			}
+		
+			/**
+			 * Return JSON object from given JSON string.
+			 *
+			 * @param JSONString String data to be transformed into JSON object.
+			 */
+			function stringToJSON(JSONString)
+			{
+				var safeString = JSONString.replace(/\\"/g, '"');
+				var jsonObject = JSON.parse(safeString);
+				return jsonObject;
+			}
+			
+			/**
+			 * Return list of listingId for the ones that were selected via the checkbox
+			 */
+			function getListOfIdOfSelectedRows()
+			{
+				var selectedListingIdList = [];
+				for(i = 0; i < initialListing.length; i++)
+				{	
+					var idNumber = initialListing[i].listingId;
+					var elementId = idNumber + "-cb";
+					var checkboxElement = document.getElementById(elementId);
+					if(checkboxElement.checked)
+					{
+						selectedListingIdList.push(idNumber);
+					}
+				}
+				
+				return selectedListingIdList;
+			}
+			
+			/**
+			 * Return list of JSON object for the ones that were selected via the checkbox
+			 */
+			function getListOfObjectsOfSelectedRows()
+			{
+				var selectedListingList = [];
+				for(i = 0; i < initialListing.length; i++)
+				{	
+					var idNumber = initialListing[i].listingId;
+					var elementId = idNumber + "-cb";
+					var checkboxElement = document.getElementById(elementId);
+					if(checkboxElement.checked)
+					{
+						selectedListingList.push(initialListing[i]);
+					}
+				}
+				
+				return selectedListingList;
+			}
+
+			/**
+			 * Fill the table with selected listing
+			 *
+			 * @param listingList List of Listing object to be used to populate the table.			 
+			 */
+		    function populateTable(listingList)
+			{
+			    var tableBody = document.getElementsByTagName("TBODY")[0];
+			    var tableBodyHTML = '';
+			    
+			    // First remove escape characters from the data string so parsing to JSON will
+				// be possible, then populate the listing table.
+				for(i = 0; i < listingList.length; i++)
+				{
+					var listingElement = listingList[i];
+					
+					tableBodyHTML += '<tr id="' + listingElement.listingId + '-row">'          +
+					'	<td>'                                                               +
+					'		<input type="checkbox" id="' + listingElement.listingId + '-cb">'  +
+					'	</td>'                                                              +
+					'	<td>' + listingElement.dateSubmitted +'</td>'                          +
+					'	<td>' + listingElement.listingId +'</td>'                              +
+					'	<td>' + listingElement.address +'</td>'                                +
+					'	<td>' + listingElement.description +'</td>'                            +
+					'	<td>' + listingElement.price +'</td>'                                  +
+					'</tr>';
+				}
+				
+				tableBody.innerHTML = tableBodyHTML;
+			}
+			
+			/**
+		 	 * Restore the table to the way it was before edit mode by popluating the table with initial data.
+		 	 */
+			function tableExitEditMode()
+			 {
+				populateTable(initialListing);
+			 }
+			
+			/**
+			 * Replace all text fields in all the selected rows with text edit
+			 */
+			function tableEnterEditMode()
+			{
+				var listingList = getListOfObjectsOfSelectedRows();
+				for(i = 0; i < listingList.length; i++)
+				{
+					var listingElement = listingList[i];
+					var id = listingElement.listingId + "-row";
+					var row = document.getElementById(id);
+					var rowHTML = '';
+					
+					rowHTML = '<td>'                                                                                                              +
+					'	<input type="checkbox" id="' + listingElement.listingId + '-cb" checked>'                                                 +
+					'</td>'                                                                                                                       +
+					'<td>' + listingElement.dateSubmitted +'</td>'                                                                                +
+					'<td>' + listingElement.listingId +'</td>'                                                                                    +
+					'<td>'                                                                                                                        + 
+					'	<input type="text" id="' + listingElement.listingId + '-address" value="' + listingElement.address + '"></input>'         +
+					'</td>'                                                                                                                       +
+					'<td>'                                                                                                                        + 
+					'	<input type="text" id="' + listingElement.listingId + '-description" value="' + listingElement.description + '"></input>' +
+					'</td>'                                                                                                                       +
+					'<td>'                                                                                                                        + 
+					'	<input type="text" id="' + listingElement.listingId + '-price" value="' + listingElement.price + '"></input>'             +
+					'</td>';
+					
+					row.innerHTML = rowHTML;
+				}
+			}
+			
+			/**
+			 * Remove "Done" button when not in edit mode
+			 */
+			function buttonExitEditMode()
+			{
+				var parent = document.getElementsByTagName("BODY")[0];
+				var child = document.getElementById("doneBtn");
+				parent.removeChild(child);
+			}
+			
+			/**
+			 * Get the text that were typed and transform them into a JSON data string, then send
+			 * to the sever. Receive a new listing data that is then populated to the table.
+			 */
+			function doneBtnHandler()
+			{
+				console.log("Done clicked!");
+				
+				// Get all the text-edit fields and get the value that was typed, then put them inside a list of JSON 
+				var listingList = getListOfObjectsOfSelectedRows();
+				var updateDataList = [];
+				for(i = 0; i < listingList.length; i++)
+				{
+					var listingElement = listingList[i];
+					var addressId = listingElement.listingId + "-address";
+					var descriptionId = listingElement.listingId + "-description";
+					var priceId = listingElement.listingId + "-price";
+					
+					var addressElement = document.getElementById(addressId);
+					var descriptionElement = document.getElementById(descriptionId);
+					var priceElement = document.getElementById(priceId);
+					
+					var listingIdValue = listingElement.listingId;
+					var addressValue = addressElement.value;
+					var descriptionValue = descriptionElement.value;
+					var priceValue = priceElement.value;
+					
+					var updateDataElement = new Object();
+					updateDataElement.listingId = listingIdValue;
+					updateDataElement.address = addressValue;
+					updateDataElement.description = descriptionValue;
+					updateDataElement.price = priceValue;
+					
+					updateDataList.push(updateDataElement);
+				}
+				
+				var dataString = JSON.stringify(updateDataList);
+				
+				var xhr = new XMLHttpRequest();
+				xhr.open('POST', "http://localhost:8080/update", true);
+				xhr.send(dataString);
+				xhr.addEventListener("readystatechange", function()
+					{
+					    if (xhr.readyState == 4 && xhr.status == 200) 
+						{
+							editMode = false;
+							var response = JSON.parse(xhr.responseText);
+							initialListing = response;
+							tableExitEditMode();
+							buttonExitEditMode();
+							console.log("Update successful!");
+						}
+						else
+						{
+							console.log("Failed to call server! State: " + xhr.readyState + " Status: " + xhr.status);
+						}
+					}, false);
+			}
+			
+			/**
+			 * Add "Done" button to edit mode
+			 */
+			function buttonEnterEditMode()
+			{
+				var body = document.getElementsByTagName("BODY")[0];
+				var doneBtn = document.createElement("INPUT");
+				doneBtn.setAttribute("type", "button");
+				doneBtn.setAttribute("id", "doneBtn");
+				doneBtn.setAttribute("value", "Done");
+				doneBtn.addEventListener("click", doneBtnHandler);
+	
+				body.appendChild(doneBtn);
+			}
+			
+			/**
+			 * Replace all text fields in the selected rows with text edit and add button "Done" which would then send the 
+			 * JSON data to the server to process.
+			 */
+			function editHandler()
+			{
+				editMode = !editMode;
+				
+				if(editMode)
+				{				
+					tableEnterEditMode();
+					buttonEnterEditMode();
+				}
+				else
+				{
+					tableExitEditMode();
+					buttonExitEditMode();
+				}
+			}
+			
+			/**
+			 * Send the list of listingId that is to be deleted to the backend to delete.
+			 */
+			function deleteHandler()
+			{
+				var listingIdList = getListOfIdOfSelectedRows();
+				var listingIdListString = JSON.stringify(listingIdList);
+				console.log(listingIdListString);
+				
+				var xhr = new XMLHttpRequest();
+				xhr.open('DELETE', "http://localhost:8080/delete", true);
+				xhr.send(listingIdListString);
+				xhr.addEventListener("readystatechange", function()
+					{
+					    if (xhr.readyState == 4 && xhr.status == 200) 
+						{
+							var response = JSON.parse(xhr.responseText);
+							populateTable(response);
+							initialListing = response;
+							console.log("Delete successful!");
+						}
+						else
+						{
+							console.log("Failed to call server! State: " + xhr.readyState + " Status: " + xhr.status);
+						}
+					}, false);
+			}
+			
+			/**
+			 * Add initial button handlers
+			 */
+			function attachHandlers()
+			{
+				var editBtn = document.getElementById("editBtn");
+				var deleteBtn = document.getElementById("deleteBtn");
+				
+				editBtn.addEventListener("click", editHandler);
+				deleteBtn.addEventListener("click", deleteHandler);
+			}
+			
+			// Perform initial operations
+			populateTable(initialListing);
+			attachHandlers();
+		           
+		/*]]>*/
+		</script>
+	</body>
+</html>

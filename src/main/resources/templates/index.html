@@ -1,0 +1,199 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+	<head>
+		<title>Listing Index</title>
+	</head>
+	<body>
+		<h1>Listing</h1>
+		
+		<form action="#" th:action="@{/details}" th:object="${searchString}" method="POST">
+			<input type="text" id="searchText" th:field="${searchString.searchString}" value="Search"/>
+			<input type="submit" name="search" value="Search"/>
+		</form>
+		
+		<button type="buton" id="createBtn">Create</button>
+		
+		<form action="#" th:action="@{/details}" th:object="${listingJsonString}" method="POST">
+			<input type="submit" name="select" value="Submit"/>
+			<table border="1">
+				<thead>
+					<tr>
+						<th>Select</th>
+						<th>Listing Id</th>
+						<th>Date</th>
+					</tr>
+				</thead>
+				<tbody id="listingTableBody">	
+					<tr th:each="listing : ${listings}">
+						<td><input th:id="${listing.listingId}" type="checkbox" th:field="${listingJsonString.listingArray}" value=""/></td>
+						<td th:text="${listing.listingId}">Id ...</td>
+						<td th:text="${listing.dateSubmitted}">Date ...</td>
+					</tr>			
+				</tbody>
+			</table>		
+		</form>
+		
+		<div id="createMode"></div>
+		
+		<script th:inline="javascript">
+		/*<![CDATA[*/
+		           
+		    var createMode = false;
+		           
+		    // Set the value for the checkboxes to be the JSON data string of the associated listing
+		    var listings = [[${listings}]];
+		    for(i = 0; i < listings.length; i++)
+			{
+		    	var checkboxElement = document.getElementById(listings[i]["listingId"]);
+		    	var JSONDataString = JSON.stringify(listings[i]);
+				var safeJSONDataString = JSONDataString.replace(/"/g, '\\"');
+		    	checkboxElement.setAttribute("value", safeJSONDataString);
+			}
+		    
+		    /**
+		 	 * Remove the Create table
+		 	 */
+		    function tableExitCreateMode()
+		    {
+		    	var parent = document.getElementsByTagName("BODY")[0];
+		    	var child = document.getElementById("editTable");
+		    	
+		    	parent.removeChild(child);
+		    }
+		    
+		    /**
+			 * Add the table that accepts text input for the new Listing
+			 */
+		    function tableEnterCreateMode()
+		    {
+		    	var body = document.getElementsByTagName("BODY")[0];
+		    	var editTable = document.createElement("TABLE");
+		    	editTable.setAttribute("id", "editTable");
+		    	
+		    	editTable.innerHTML = '<thead>'                                        +
+		    	'	<tr>'                                                              +
+		    	'		<th>Address</th>'                                              +
+		    	'		<th>Description</th>'                                          +
+		    	'		<th>Price</th>'                                                +
+		    	'	</tr>'                                                             +
+		    	'</thead>'                                                             + 
+		    	'<tbody>'                                                              +
+		    	'	<tr>'                                                              +
+		    	'		<td>'                                                          + 
+				'			<input type="text" id="new-address" value=""></input>'     +
+				'		</td>'                                                         +
+				'		<td>'                                                          + 
+				'			<input type="text" id="new-description" value=""></input>' +
+				'		</td>'                                                         +
+				'		<td>'                                                          + 
+				'			<input type="text" id="new-price" value=""></input>'       +
+				'		</td>'                                                         +
+		    	'	</tr>'                                                             +
+		    	'</tbody>';
+		    	
+				body.appendChild(editTable);
+		    }
+		    
+		    /**
+			 * Remove "Done" button when not in Create mode
+			 */
+		    function buttonExitCreateMode()
+		    {
+		    	var parent = document.getElementsByTagName("BODY")[0];
+				var child = document.getElementById("doneBtn");
+				parent.removeChild(child);
+		    }
+		    
+		    /**
+			 * Get the text that were typed and transform them into a JSON data string, then send
+			 * to the sever. Receive a new listing data that is then populated to the table.
+			 */
+		    function doneBtnHandler()
+		    {
+		    	
+				// Get all the text-edit fields and get the value that was typed, then put them inside a list of JSON 
+		    	var addressId = "new-address";
+				var descriptionId = "new-description";
+				var priceId = "new-price";
+				
+				var addressElement = document.getElementById(addressId);
+				var descriptionElement = document.getElementById(descriptionId);
+				var priceElement = document.getElementById(priceId);
+				
+				var addressValue = addressElement.value;
+				var descriptionValue = descriptionElement.value;
+				var priceValue = priceElement.value;
+				
+				var createDataElement = new Object();
+				createDataElement.address = addressValue;
+				createDataElement.description = descriptionValue;
+				createDataElement.price = priceValue;
+					
+				var dataString = JSON.stringify(createDataElement);
+				
+				var xhr = new XMLHttpRequest();
+				xhr.open('POST', "http://localhost:8080/create", true);
+				xhr.send(dataString);
+				xhr.addEventListener("readystatechange", function()
+					{
+					    if (xhr.readyState == 4 && xhr.status == 200) 
+						{
+							console.log("Create successful!");
+			    			location.reload();
+						}
+						else
+						{
+							console.log("Failed to call server! State: " + xhr.readyState + " Status: " + xhr.status);
+						}
+					}, false);
+		    }
+		    
+		    /**
+			 * Add "Done" button to Create mode
+			 */
+		    function buttonEnterCreateMode()
+		    {
+		    	var body = document.getElementsByTagName("BODY")[0];
+				var doneBtn = document.createElement("INPUT");
+				doneBtn.setAttribute("type", "button");
+				doneBtn.setAttribute("id", "doneBtn");
+				doneBtn.setAttribute("value", "Done");
+				doneBtn.addEventListener("click", doneBtnHandler);
+	
+				body.appendChild(doneBtn);
+		    }
+		    
+		    /**
+			 * Add a table to input the new listing, then add the "Done" button.
+			 */
+		    function createHandler()
+		    {
+		    	createMode = !createMode;
+		    	
+		    	if(createMode)
+	    		{
+	    			tableEnterCreateMode();
+	    			buttonEnterCreateMode();
+	    		}
+		    	else
+	    		{
+	    			tableExitCreateMode();
+	    			buttonExitCreateMode();
+	    		}
+		    }
+		    
+		    /**
+			 * Add initial button handlers
+			 */			function attachHandlers()
+			{
+				var createBtn = document.getElementById("createBtn");
+
+				createBtn.addEventListener("click", createHandler);
+			}
+			 
+			 attachHandlers();
+		           
+		/*]]>*/
+		</script>
+	</body>
+</html>
