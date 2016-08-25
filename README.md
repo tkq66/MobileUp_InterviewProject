@@ -3,6 +3,7 @@
 Required:
 
   Gradle  - to build the project
+  
   MySQL   - a database in localhost with the credentials specified in application.properties, located in src/main/resources
           - a table inside the database, created with the query inside the file CreateTables.sql.
 
